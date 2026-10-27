@@ -67,12 +67,12 @@ use `visudo -f /etc/sudoers.d/lidawake`.
 - Live CPU die temperature and lid state.
 - The power line turns orange on battery.
 
-## Guards
+## Guards and warnings
 
-**Battery guard**, on by default. The flag ignores the power source, so the
-moment the Mac runs on battery the app sets `disablesleep 0`. Untick it in the
-menu if you want lid-awake on battery on purpose. A manual "on" while on
-battery unticks the guard for you: the click wins.
+**Battery is a warning, not an action.** The flag ignores the power source,
+so the menu turns orange and says `battery - draining` while it is on. Nothing
+turns it off for you: the Mac sleeps on lid close only because you left the
+flag off.
 
 **Thermal guard**. When the flag is on, the lid is shut, and the hottest CPU
 die sensor reads 90 C or more, the app drops the flag, forces sleep and beeps.

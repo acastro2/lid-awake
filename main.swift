@@ -125,7 +125,6 @@ final class LidAwake: NSObject, NSApplicationDelegate {
     private let tempLine = NSMenuItem(title: "", action: nil, keyEquivalent: "")
     private let powerLine = NSMenuItem(title: "", action: nil, keyEquivalent: "")
     private let toggleItem = NSMenuItem(title: "", action: #selector(toggle), keyEquivalent: "t")
-    private let batteryItem = NSMenuItem(title: "Turn off on battery", action: #selector(toggleBatteryGuard), keyEquivalent: "")
     private let lockItem = NSMenuItem(title: "Lock after 5 min", action: #selector(toggleLock), keyEquivalent: "")
     private var timer: Timer?
     private let temp = TempReader()
@@ -134,8 +133,6 @@ final class LidAwake: NSObject, NSApplicationDelegate {
     private var tripC: Double { UserDefaults.standard.object(forKey: "TripC") as? Double ?? 90 }
     /// The trip stays latched until the die drops below this.
     private var clearC: Double { UserDefaults.standard.object(forKey: "ClearC") as? Double ?? 75 }
-    /// Drop the flag as soon as the machine runs on battery.
-    private var batteryGuard: Bool { UserDefaults.standard.object(forKey: "BatteryGuard") as? Bool ?? true }
     /// Lock the screen after this much idle, when ticked.
     private var lockAfter5: Bool { UserDefaults.standard.object(forKey: "LockAfter5") as? Bool ?? false }
     private var tripped = false
@@ -153,8 +150,6 @@ final class LidAwake: NSObject, NSApplicationDelegate {
 
         let quit = NSMenuItem(title: "Quit Lid Awake", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
 
-        batteryItem.target = self
-        batteryItem.state = batteryGuard ? .on : .off
         lockItem.target = self
         lockItem.state = lockAfter5 ? .on : .off
 
@@ -163,7 +158,6 @@ final class LidAwake: NSObject, NSApplicationDelegate {
         menu.addItem(powerLine)
         menu.addItem(.separator())
         menu.addItem(toggleItem)
-        menu.addItem(batteryItem)
         menu.addItem(lockItem)
         menu.addItem(.separator())
         menu.addItem(quit)
@@ -195,13 +189,6 @@ final class LidAwake: NSObject, NSApplicationDelegate {
         }
         if tripped, let c = celsius, c < clearC {
             tripped = false
-        }
-
-        // Battery guard: the flag ignores the power source, so drop it on battery.
-        if batteryGuard, !ac, off {
-            _ = Sys.setSleepDisabled(false)
-            redraw(off: false, lid: lid, ac: ac, celsius: celsius)
-            return
         }
 
         // Lock guard: 5 minutes without input locks the screen, once per idle period.
@@ -244,12 +231,6 @@ final class LidAwake: NSObject, NSApplicationDelegate {
         tick()
     }
 
-    @objc private func toggleBatteryGuard() {
-        UserDefaults.standard.set(!batteryGuard, forKey: "BatteryGuard")
-        batteryItem.state = batteryGuard ? .on : .off
-        tick()
-    }
-
     private func redraw(off: Bool, lid: Bool, ac: Bool, celsius: Double?) {
         statusLine.title = tripped ? "Lid awake: OFF (thermal trip)" : (off ? "Lid awake: ON" : "Lid awake: OFF")
         toggleItem.title = off ? "Turn OFF — allow sleep" : "Turn ON — keep awake"
@@ -266,7 +247,6 @@ final class LidAwake: NSObject, NSApplicationDelegate {
             attributes: [.font: NSFont.menuFont(ofSize: 11),
                          .foregroundColor: (celsius ?? 0) >= tripC ? NSColor.systemRed : NSColor.secondaryLabelColor])
 
-        batteryItem.state = batteryGuard ? .on : .off
         lockItem.state = lockAfter5 ? .on : .off
 
         if ac {
@@ -310,12 +290,8 @@ final class LidAwake: NSObject, NSApplicationDelegate {
     }
 
     /// Flips the flag. Returns the new state, or nil when sudo refused.
-    /// An explicit ON on battery also unticks the battery guard: the click wins.
     func performToggle() -> Bool? {
         let target = !Sys.sleepDisabled
-        if target, !Sys.onAC {
-            UserDefaults.standard.set(false, forKey: "BatteryGuard")
-        }
         guard Sys.setSleepDisabled(target) else { return nil }
         return target
     }
@@ -331,7 +307,6 @@ if CommandLine.arguments.contains("--selftest") {
     print("on AC     :", Sys.onAC)
     print("flag      :", Sys.sleepDisabled)
     print("trip at   :", UserDefaults.standard.object(forKey: "TripC") as? Double ?? 90)
-    print("batt guard:", UserDefaults.standard.object(forKey: "BatteryGuard") as? Bool ?? true)
     let idle = CGEventSource.secondsSinceLastEventType(.hidSystemState, eventType: CGEventType(rawValue: ~0)!)
     print(String(format: "idle      : %.1f s", idle))
     print("lock 5 min:", UserDefaults.standard.object(forKey: "LockAfter5") as? Bool ?? false)
@@ -343,7 +318,6 @@ if CommandLine.arguments.contains("--toggle") {
     let d = LidAwake()
     if let on = d.performToggle() {
         print(on ? "flag=1 (awake)" : "flag=0 (normal sleep)")
-        print("battery guard:", UserDefaults.standard.object(forKey: "BatteryGuard") as? Bool ?? true)
     } else {
         print("sudo refused")
     }
