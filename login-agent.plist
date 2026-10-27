@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.github.acastro2.lidawake</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/Applications/Lid Awake.app/Contents/MacOS/LidAwake</string>
+    </array>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <!-- Restart if it dies unexpectedly, but not after a clean Quit. -->
+    <key>KeepAlive</key>
+    <dict>
+        <key>SuccessfulExit</key>
+        <false/>
+    </dict>
+
+    <key>ThrottleInterval</key>
+    <integer>10</integer>
+
+    <key>ProcessType</key>
+    <string>Interactive</string>
+
+    <key>LimitLoadToSessionType</key>
+    <string>Aqua</string>
+</dict>
+</plist>
