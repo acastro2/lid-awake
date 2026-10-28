@@ -8,7 +8,8 @@ keyboard and mouse are attached. This app skips that requirement by setting
 `pmset -a disablesleep`, the one switch that overrides lid sleep. No external
 hardware needed.
 
-Two guards stop that switch from cooking the machine or flattening the battery.
+A thermal guard stops that switch from cooking the machine, and the menu warns
+when the flag is on while the Mac runs on battery.
 
 ## What it does
 
